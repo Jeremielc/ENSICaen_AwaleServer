@@ -16,29 +16,35 @@ import java.net.Socket;
  */
 public class Player extends Thread {
 
+    private final Server server;
     private final Socket socket, otherSocket;
     private boolean threadIsAlive, mustUpdateData;
 
-    public Player(Socket playerSocket, Socket otherPlayerSocket) {
+    public Player(Server s, Socket playerSocket, Socket otherPlayerSocket) {
+        server = s;
         socket = playerSocket;
         otherSocket = otherPlayerSocket;
-        threadIsAlive = false;
+        threadIsAlive = true;
         mustUpdateData = false;
     }
 
     @Override
     public void run() {
-        while (isThreadIsAlive()) {
+        while (threadIsAlive) {
             String received = "";
             try {
                 if (socket.getInputStream().available() > 0) {
                     received = readData(socket);
-                    setMustUpdateData(true);
+                    mustUpdateData = true;
+                }
+                
+                if (received.trim().equalsIgnoreCase("quit")) {
+                    server.setReceivedQuitRequest(false);
                 }
 
-                if (isMustUpdateData()) {
+                if (mustUpdateData) {
                     writeData(received, otherSocket);
-                    setMustUpdateData(false);
+                    mustUpdateData = false;
                 }
             } catch (IOException ex) {
                 ex.printStackTrace(System.err);
@@ -61,25 +67,13 @@ public class Player extends Thread {
     private void writeData(String data, Socket otherPlayerSocket) {
         try (DataOutputStream dos = new DataOutputStream(otherPlayerSocket.getOutputStream())) {
             dos.writeUTF(data);
+            dos.flush();
         } catch (IOException ex) {
             ex.printStackTrace(System.err);
         }
     }
 
-    public boolean isThreadIsAlive() {
-        return threadIsAlive;
-    }
-
     public void setThreadIsAlive(boolean threadIsAlive) {
         this.threadIsAlive = threadIsAlive;
     }
-
-    public boolean isMustUpdateData() {
-        return mustUpdateData;
-    }
-
-    public void setMustUpdateData(boolean mustUpdateData) {
-        this.mustUpdateData = mustUpdateData;
-    }
-
 }
