@@ -5,11 +5,10 @@
  */
 package com.ensicaen.awaleserver.main;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Stream;
 
 /**
  *
@@ -18,46 +17,69 @@ import java.util.stream.Stream;
 public class Player extends Thread {
 
     private final Socket socket, otherSocket;
-    private boolean alive;
-    private boolean mustUpdateData;
-    private String receivedData, SendData;
-    
-    public Player() {
-        socket = s;
-        alive = false;
+    private boolean threadIsAlive, mustUpdateData;
+
+    public Player(Socket playerSocket, Socket otherPlayerSocket) {
+        socket = playerSocket;
+        otherSocket = otherPlayerSocket;
+        threadIsAlive = false;
         mustUpdateData = false;
     }
 
     @Override
     public void run() {
-        while (alive) {
+        while (isThreadIsAlive()) {
+            String received = "";
             try {
                 if (socket.getInputStream().available() > 0) {
-                    //read from other player
+                    received = readData(socket);
+                    setMustUpdateData(true);
                 }
-                
-                if (mustUpdateData) {
-                    //write to other player
+
+                if (isMustUpdateData()) {
+                    writeData(received, otherSocket);
+                    setMustUpdateData(false);
                 }
             } catch (IOException ex) {
                 ex.printStackTrace(System.err);
             }
         }
     }
-    
-    private void readData() {
+
+    private String readData(Socket playerSocket) {
+        String receivedData = "";
+
+        try (DataInputStream dis = new DataInputStream(playerSocket.getInputStream())) {
+            receivedData = dis.readUTF();
+        } catch (IOException ex) {
+            ex.printStackTrace(System.err);
+        }
         
-    }
-    
-    private void writeData() {
-        
+        return receivedData;
     }
 
-    public void setAlive(boolean alive) {
-        this.alive = alive;
+    private void writeData(String data, Socket otherPlayerSocket) {
+        try (DataOutputStream dos = new DataOutputStream(otherPlayerSocket.getOutputStream())) {
+            dos.writeUTF(data);
+        } catch (IOException ex) {
+            ex.printStackTrace(System.err);
+        }
+    }
+
+    public boolean isThreadIsAlive() {
+        return threadIsAlive;
+    }
+
+    public void setThreadIsAlive(boolean threadIsAlive) {
+        this.threadIsAlive = threadIsAlive;
+    }
+
+    public boolean isMustUpdateData() {
+        return mustUpdateData;
     }
 
     public void setMustUpdateData(boolean mustUpdateData) {
         this.mustUpdateData = mustUpdateData;
     }
+
 }
