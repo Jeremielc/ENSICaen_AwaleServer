@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.ensicaen.awaleserver.main;
 
 import java.io.DataInputStream;
@@ -11,8 +6,9 @@ import java.io.IOException;
 import java.net.Socket;
 
 /**
+ * Contains information on the players in order to enable communication.
  *
- * @author jeremie
+ * @author Pierrick Hue and Jérémie Leclerc
  */
 public class Player extends Thread {
 
@@ -20,6 +16,13 @@ public class Player extends Thread {
     private final Socket socket, otherSocket;
     private boolean threadIsAlive, mustUpdateData;
 
+    /**
+     * Instanciate a player object.
+     *
+     * @param s The server object. Used to managed 'quit' request.
+     * @param playerSocket Player's socket to receive informations.
+     * @param otherPlayerSocket Opponent's socket to send informations.
+     */
     public Player(Server s, Socket playerSocket, Socket otherPlayerSocket) {
         server = s;
         socket = playerSocket;
@@ -29,6 +32,9 @@ public class Player extends Thread {
     }
 
     @Override
+    /**
+     * Look for information and transfer them.
+     */
     public void run() {
         while (threadIsAlive) {
             String received = "";
@@ -37,7 +43,7 @@ public class Player extends Thread {
                     received = readData(socket);
                     mustUpdateData = true;
                 }
-                
+
                 if (received.trim().equalsIgnoreCase("quit")) {
                     server.setReceivedQuitRequest(false);
                 }
@@ -52,6 +58,12 @@ public class Player extends Thread {
         }
     }
 
+    /**
+     * Read string from player's socket.
+     *
+     * @param playerSocket Player's socket.
+     * @return A string representing the informations.
+     */
     private String readData(Socket playerSocket) {
         String receivedData = "";
 
@@ -60,10 +72,16 @@ public class Player extends Thread {
         } catch (IOException ex) {
             ex.printStackTrace(System.err);
         }
-        
+
         return receivedData;
     }
 
+    /**
+     * Wrtite string to opponent's socket.
+     *
+     * @param data The informations to send.
+     * @param otherPlayerSocket Opponent's socket.
+     */
     private void writeData(String data, Socket otherPlayerSocket) {
         try (DataOutputStream dos = new DataOutputStream(otherPlayerSocket.getOutputStream())) {
             dos.writeUTF(data);
@@ -73,6 +91,11 @@ public class Player extends Thread {
         }
     }
 
+    /**
+     * Use to enable the thread to run and to stop it.
+     *
+     * @param threadIsAlive A boolean telling if the thread must run or not.
+     */
     public void setThreadIsAlive(boolean threadIsAlive) {
         this.threadIsAlive = threadIsAlive;
     }
